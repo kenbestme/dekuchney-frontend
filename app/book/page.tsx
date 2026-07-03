@@ -93,6 +93,7 @@ export default function ReceptionDashboard() {
         }));
       setGuests(currentGuests);
 
+      // --- UPDATED: Added exact TypeScript casting here ---
       const upcomingReservations = bookingsArray
         .filter((b: any) => b.check_in > today && b.payment_status !== 'cancelled')
         .map((b: any) => ({
@@ -101,7 +102,7 @@ export default function ReceptionDashboard() {
           room: b.suite || b.suite_name,
           checkIn: b.check_in,
           checkOut: b.check_out,
-          status: b.payment_status === 'paid' ? 'confirmed' : 'pending',
+          status: (b.payment_status === 'paid' ? 'confirmed' : 'pending') as 'confirmed' | 'pending',
         }));
       setReservations(upcomingReservations);
 
@@ -270,7 +271,6 @@ export default function ReceptionDashboard() {
           {activeTab === 'overview' && <OverviewTab />}
           {activeTab === 'checkin' && <CheckInTab rooms={rooms} onCheckIn={handleCheckIn} />}
           {activeTab === 'checkout' && <CheckOutTab guests={guests} onCheckOut={handleCheckOut} />}
-          {/* ✅ Pass rooms and onRefresh to ReservationsTab */}
           {activeTab === 'reservations' && (
             <ReservationsTab
               rooms={rooms}
@@ -463,7 +463,6 @@ function CheckOutTab({ guests, onCheckOut }: { guests: Guest[]; onCheckOut: (id:
   );
 }
 
-// ✅ UPDATED ReservationsTab with Create Reservation Form
 function ReservationsTab({
   rooms,
   reservations,
@@ -797,7 +796,6 @@ function GuestsTab({ guests }: { guests: Guest[] }) {
   );
 }
 
-// ---------- UPDATED RoomStatusTab with dropdown ----------
 function RoomStatusTab({ rooms, onRefresh }: { rooms: Room[]; onRefresh: () => void }) {
   const [updating, setUpdating] = useState<number | null>(null);
   const statusColors: Record<string, string> = {

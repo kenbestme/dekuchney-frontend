@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import PaystackPop from '@paystack/inline-js';
 
 interface BookingDetails {
   id: string;
@@ -14,7 +13,8 @@ interface BookingDetails {
   amount: number;
 }
 
-export default function PaymentInfo() {
+// 1. Separate component that uses useSearchParams
+function PaymentInfoContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const bookingId = searchParams.get('booking_id');
@@ -50,9 +50,12 @@ export default function PaymentInfo() {
     if (!booking) return;
     setPaying(true);
 
+    // DYNAMIC IMPORT: Prevents "window is not defined" error during Next.js build
+    const PaystackPop = require('@paystack/inline-js');
+    
     const paystack = new PaystackPop();
     paystack.newTransaction({
-      key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
+      key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
       email: booking.email,
       amount: booking.amount * 100, // in kobo
       currency: 'NGN',
@@ -151,5 +154,18 @@ export default function PaymentInfo() {
         </div>
       </div>
     </div>
+  );
+}
+
+// 2. Wrap it with Suspense in the default export
+export default function PaymentInfo() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#fdfbf7]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#d4af37]"></div>
+      </div>
+    }>
+      <PaymentInfoContent />
+    </Suspense>
   );
 }

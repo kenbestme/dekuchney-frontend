@@ -7,11 +7,14 @@ import Link from 'next/link';
 export default function AdminCommunications() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [logs, setLogs] = useState([]);
-  const [templates, setTemplates] = useState([]);
+  
+  // Added <any[]> to fix the TypeScript "never[]" error
+  const [logs, setLogs] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
+  
   const [selectedBooking, setSelectedBooking] = useState('');
   const [emailForm, setEmailForm] = useState({ subject: '', message: '' });
-  const [bookings, setBookings] = useState([]);
   const [message, setMessage] = useState('');
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('hotel_admin_token') : null;
@@ -34,6 +37,7 @@ export default function AdminCommunications() {
       const logsData = await logsRes.json();
       const templatesData = await templatesRes.json();
       const bookingsData = await bookingsRes.json();
+      
       if (logsData.success) setLogs(logsData.data);
       if (templatesData.success) setTemplates(templatesData.data);
       setBookings(Array.isArray(bookingsData) ? bookingsData : []);

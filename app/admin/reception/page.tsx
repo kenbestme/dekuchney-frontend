@@ -78,11 +78,12 @@ export default function ReceptionDashboard() {
     occupiedRooms: 0,
   });
 
-  const safeFetch = async (url: string, options: any = {}) => {
+  // Explicitly typing the return type to satisfy TypeScript
+  const safeFetch = async (url: string, options: any = {}): Promise<{ ok: boolean; status: number; data: any }> => {
     try {
       const res = await fetch(url, options);
       const text = await res.text();
-      let data = {};
+      let data: any = {};
       try { data = JSON.parse(text); } catch { /* Ignore parse errors */ }
       return { ok: res.ok, status: res.status, data };
     } catch (error) {
@@ -176,7 +177,7 @@ export default function ReceptionDashboard() {
       const relevantGuests = safeData.filter(b => b.paymentStatus !== 'cancelled');
       setGuests(relevantGuests);
 
-      // Upcoming reservations
+      // Upcoming reservations - ADDED EXACT TYPESCRIPT CASTING HERE
       const upcomingReservations = safeData
         .filter(b => b.checkIn >= todayString && b.paymentStatus !== 'cancelled')
         .map(b => ({
@@ -185,7 +186,7 @@ export default function ReceptionDashboard() {
           room: b.room,
           checkIn: b.checkIn,
           checkOut: b.checkOut,
-          status: b.paymentStatus === 'paid' ? 'confirmed' : 'pending',
+          status: (b.paymentStatus === 'paid' ? 'confirmed' : 'pending') as 'confirmed' | 'pending',
         }));
       setReservations(upcomingReservations);
 

@@ -6,7 +6,9 @@ import Link from 'next/link';
 
 export default function AdminRooms() {
   const router = useRouter();
-  const [rooms, setRooms] = useState([]);
+  
+  // Added <any[]> to satisfy TypeScript
+  const [rooms, setRooms] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<any>(null);
   
