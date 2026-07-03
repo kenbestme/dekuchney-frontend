@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+// ✅ Use environment variable for API base URL
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000';
+
 export default function AdminCommunications() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   
-  // Added <any[]> to fix the TypeScript "never[]" error
+  // ✅ Explicit any[] to fix TypeScript "never[]" error
   const [logs, setLogs] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
@@ -17,30 +20,43 @@ export default function AdminCommunications() {
   const [emailForm, setEmailForm] = useState({ subject: '', message: '' });
   const [message, setMessage] = useState('');
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('hotel_admin_token') : null;
+  // ✅ Safe token retrieval (prevents SSR crashes)
+  const getToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('hotel_admin_token');
+    }
+    return null;
+  };
 
   useEffect(() => {
+    const token = getToken();
     if (!token) {
       router.push('/admin/login');
       return;
     }
-    fetchData();
+    fetchData(token);
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (authToken?: string | null) => {
+    const token = authToken || getToken();
+    if (!token) return;
+
     try {
       const [logsRes, templatesRes, bookingsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/communications/logs', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('http://localhost:5000/api/communications/templates', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('http://localhost:5000/api/bookings', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/api/communications/logs`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/api/communications/templates`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/api/bookings`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
+      
       const logsData = await logsRes.json();
       const templatesData = await templatesRes.json();
       const bookingsData = await bookingsRes.json();
       
       if (logsData.success) setLogs(logsData.data);
       if (templatesData.success) setTemplates(templatesData.data);
-      setBookings(Array.isArray(bookingsData) ? bookingsData : []);
+      
+      // ✅ Cast to any[] to avoid TypeScript error
+      setBookings((Array.isArray(bookingsData) ? bookingsData : []) as any[]);
     } catch (err) {
       console.error(err);
     } finally {
@@ -54,8 +70,12 @@ export default function AdminCommunications() {
       alert('Please fill in all fields');
       return;
     }
+
+    const token = getToken();
+    if (!token) return;
+
     try {
-      const res = await fetch('http://localhost:5000/api/communications/send', {
+      const res = await fetch(`${API_BASE}/api/communications/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -72,7 +92,7 @@ export default function AdminCommunications() {
         setMessage('✅ Email sent successfully!');
         setEmailForm({ subject: '', message: '' });
         setSelectedBooking('');
-        fetchData();
+        fetchData(token);
         setTimeout(() => setMessage(''), 5000);
       } else {
         alert('Failed to send email: ' + data.message);
@@ -85,15 +105,19 @@ export default function AdminCommunications() {
 
   const handleAutomatedEmail = async (type: 'pre_arrival' | 'post_stay') => {
     if (!confirm(`Send ${type.replace('_', ' ')} emails to all eligible guests?`)) return;
+    
+    const token = getToken();
+    if (!token) return;
+
     try {
-      const res = await fetch(`http://localhost:5000/api/communications/send-${type}`, {
+      const res = await fetch(`${API_BASE}/api/communications/send-${type}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (data.success) {
         setMessage(`✅ ${data.message} (${data.count || 0} sent)`);
-        fetchData();
+        fetchData(token);
         setTimeout(() => setMessage(''), 5000);
       } else {
         alert('Failed: ' + data.message);
