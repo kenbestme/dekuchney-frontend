@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+// ✅ Backend API base URL (update if needed)
+const API_URL = "https://api.dekuchneyvilla.com";
+
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,7 +20,7 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -29,7 +32,6 @@ export default function AdminLogin() {
 
       if (response.ok && data.success) {
         localStorage.setItem("hotel_admin_token", data.token);
-        // ✅ Changed redirect from /admin/dashboard to /admin/settings
         router.push("/admin/settings");
       } else {
         setError(data.message || "Invalid credentials. Please try again.");
