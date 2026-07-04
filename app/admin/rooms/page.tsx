@@ -42,20 +42,44 @@ export default function AdminRooms() {
     }
   }, [router]);
 
+  // ============================================================
+  // ✅ DEBUGGING VERSION OF fetchRooms – with console logs
+  // ============================================================
   const fetchRooms = async () => {
     const token = getToken();
-    if (!token) return;
+    console.log('🔑 Token:', token);
+    
+    if (!token) {
+      console.warn('⚠️ No token, skipping fetch');
+      return;
+    }
 
     try {
-      const res = await fetch(`${API_BASE}/api/rooms`, {
+      const url = `${API_BASE}/api/rooms`;
+      console.log('📡 Fetching rooms from:', url);
+      
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      console.log('📊 Response status:', res.status);
+      
       const result = await res.json();
-      if (Array.isArray(result)) setRooms(result);
-      else if (result.data && Array.isArray(result.data)) setRooms(result.data);
-      else setRooms([]);
+      console.log('📦 Result:', result);
+      
+      if (Array.isArray(result)) {
+        setRooms(result);
+        console.log('✅ Set rooms (array):', result.length);
+      } else if (result.data && Array.isArray(result.data)) {
+        setRooms(result.data);
+        console.log('✅ Set rooms (data array):', result.data.length);
+      } else {
+        setRooms([]);
+        console.warn('⚠️ No rooms found in response');
+      }
     } catch (err) {
-      console.error("Failed to load rooms", err);
+      console.error("❌ Failed to load rooms", err);
+      setRooms([]);
     }
   };
 
