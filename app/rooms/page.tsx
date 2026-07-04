@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-// ✅ Only API_BASE is needed for API calls (images are now served from frontend public folder)
+// ✅ Backend API base URL
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000';
+const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || API_BASE;
 
-// ✅ Explicit string[] type to fix TypeScript error
 const countries: string[] = [
   'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda',
   'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas',
@@ -48,6 +48,7 @@ export default function RoomsPage() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // --- GALLERY STATE ---
   const [galleryImages, setGalleryImages] = useState<string[] | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -296,16 +297,17 @@ export default function RoomsPage() {
                 }
               }
 
-              // ✅ NEW image mapping as requested
-              const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || 'https://api.dekuchneyvilla.com';
-
+              // ✅ FIX: Build full image URLs with IMAGE_BASE
               const fullImages = parsedImages
-             .map((img: string) => {
-              if (!img) return null;
-              if (img.startsWith('http')) return img;
-              return `${IMAGE_BASE}${img.startsWith('/') ? img : '/' + img}`;
-              })
-              .filter(Boolean);
+                .map((img: string) => {
+                  if (!img) return null;
+                  // If already absolute URL, use as-is
+                  if (img.startsWith('http')) return img;
+                  // Otherwise, prepend IMAGE_BASE and ensure leading slash
+                  const relativePath = img.startsWith('/') ? img : `/${img}`;
+                  return `${IMAGE_BASE}${relativePath}`;
+                })
+                .filter(Boolean);
 
               const firstImage = fullImages.length > 0 ? fullImages[0] : null;
 
@@ -317,7 +319,7 @@ export default function RoomsPage() {
 
               return (
                 <div key={room.id} className="bg-white shadow-xl overflow-hidden border border-gray-100 flex flex-col group">
-                  <div 
+                  <div
                     className="h-72 relative bg-gray-200 overflow-hidden cursor-pointer"
                     onClick={() => {
                       if (fullImages.length > 0) {
@@ -337,12 +339,14 @@ export default function RoomsPage() {
                         No Image Available
                       </div>
                     )}
+
                     {fullImages.length > 1 && (
                       <div className="absolute bottom-4 right-4 bg-black/70 text-white text-xs font-bold px-3 py-1.5 rounded flex items-center gap-2 z-10 shadow-lg">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        1 / {fullImages.length}
+                        {fullImages.length}
                       </div>
                     )}
+
                     <div className="absolute top-4 left-4 bg-[#d4af37] text-black font-bold py-1 px-3 text-sm uppercase shadow-md z-10">
                       ₦{Number(room.price_per_night).toLocaleString()} / Night
                     </div>
@@ -390,13 +394,13 @@ export default function RoomsPage() {
         )}
       </section>
 
-      {/* Lightbox Gallery Modal */}
+      {/* Gallery Lightbox Modal */}
       {galleryImages && galleryImages.length > 0 && (
-        <div 
+        <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-95 p-4"
           onClick={() => setGalleryImages(null)}
         >
-          <button 
+          <button
             className="absolute top-6 right-6 md:top-10 md:right-10 text-white hover:text-[#d4af37] transition-colors z-50"
             onClick={() => setGalleryImages(null)}
           >
@@ -404,8 +408,9 @@ export default function RoomsPage() {
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
+
           {galleryImages.length > 1 && (
-            <button 
+            <button
               className="absolute left-4 md:left-10 text-white hover:text-[#d4af37] transition-colors z-50 p-2"
               onClick={(e) => {
                 e.stopPropagation();
@@ -415,14 +420,16 @@ export default function RoomsPage() {
               <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
           )}
-          <img 
-            src={galleryImages[currentImageIndex]} 
-            alt="Room Gallery" 
+
+          <img
+            src={galleryImages[currentImageIndex]}
+            alt="Room Gallery"
             className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl border-2 border-gray-800"
             onClick={(e) => e.stopPropagation()}
           />
+
           {galleryImages.length > 1 && (
-            <button 
+            <button
               className="absolute right-4 md:right-10 text-white hover:text-[#d4af37] transition-colors z-50 p-2"
               onClick={(e) => {
                 e.stopPropagation();
@@ -432,6 +439,7 @@ export default function RoomsPage() {
               <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
           )}
+
           {galleryImages.length > 1 && (
             <div className="absolute bottom-6 text-white text-sm font-bold tracking-widest uppercase bg-black/50 px-4 py-2 rounded">
               {currentImageIndex + 1} / {galleryImages.length}
@@ -467,6 +475,7 @@ export default function RoomsPage() {
                   disabled={isPaying}
                 />
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   type="email"
@@ -487,6 +496,7 @@ export default function RoomsPage() {
                   disabled={isPaying}
                 />
               </div>
+
               <input
                 type="text"
                 placeholder="Address *"
@@ -496,6 +506,7 @@ export default function RoomsPage() {
                 onChange={(e) => setBookingForm({ ...bookingForm, address: e.target.value })}
                 disabled={isPaying}
               />
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   type="text"
@@ -516,6 +527,7 @@ export default function RoomsPage() {
                   disabled={isPaying}
                 />
               </div>
+
               <select
                 className="w-full p-4 border border-gray-300 outline-none focus:border-[#d4af37] bg-white"
                 value={bookingForm.country}
@@ -527,6 +539,7 @@ export default function RoomsPage() {
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Check-in</label>
@@ -551,6 +564,7 @@ export default function RoomsPage() {
                   />
                 </div>
               </div>
+
               <textarea
                 placeholder="Special Requests (Optional)"
                 className="w-full p-4 border border-gray-300 outline-none focus:border-[#d4af37] bg-white h-24 resize-none"
@@ -558,6 +572,7 @@ export default function RoomsPage() {
                 onChange={(e) => setBookingForm({ ...bookingForm, requests: e.target.value })}
                 disabled={isPaying}
               />
+
               <div className="mb-4">
                 <label className="block text-xs text-gray-500 uppercase tracking-wider mb-2">Payment Method</label>
                 <div className="flex gap-4">
@@ -583,6 +598,7 @@ export default function RoomsPage() {
                   </label>
                 </div>
               </div>
+
               <div className="flex justify-end gap-4 mt-8 pt-4 border-t border-gray-200">
                 <button
                   type="button"
