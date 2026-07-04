@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-
-// ✅ Backend API base URL
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000';
-const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || API_BASE;
+import { API_BASE } from '@/lib/api';
 
 const countries: string[] = [
   'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda',
@@ -48,7 +45,6 @@ export default function RoomsPage() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- GALLERY STATE ---
   const [galleryImages, setGalleryImages] = useState<string[] | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -83,20 +79,17 @@ export default function RoomsPage() {
     const fetchRooms = async () => {
       try {
         const res = await fetch(`${API_BASE}/api/rooms`);
-        const text = await res.text();
-        try {
-          const result = JSON.parse(text);
-          let roomsArray = [];
-          if (Array.isArray(result)) roomsArray = result;
-          else if (result.data && Array.isArray(result.data)) roomsArray = result.data;
-          else roomsArray = [];
-          setRooms(roomsArray);
-        } catch (err) {
-          console.error("JSON parse error", err);
-          setRooms([]);
-        }
+        const result = await res.json();
+        console.log('📦 Rooms data:', result);
+        
+        let roomsArray = [];
+        if (Array.isArray(result)) roomsArray = result;
+        else if (result.data && Array.isArray(result.data)) roomsArray = result.data;
+        else roomsArray = [];
+        
+        setRooms(roomsArray);
       } catch (err) {
-        console.error("Network error", err);
+        console.error("Failed to load rooms", err);
         setRooms([]);
       } finally {
         setLoading(false);
@@ -297,15 +290,13 @@ export default function RoomsPage() {
                 }
               }
 
-              // ✅ FIX: Build full image URLs with IMAGE_BASE
+              // Build full image URLs
               const fullImages = parsedImages
                 .map((img: string) => {
                   if (!img) return null;
-                  // If already absolute URL, use as-is
                   if (img.startsWith('http')) return img;
-                  // Otherwise, prepend IMAGE_BASE and ensure leading slash
                   const relativePath = img.startsWith('/') ? img : `/${img}`;
-                  return `${IMAGE_BASE}${relativePath}`;
+                  return `${API_BASE}${relativePath}`;
                 })
                 .filter(Boolean);
 
