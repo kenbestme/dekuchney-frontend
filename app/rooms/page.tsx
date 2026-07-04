@@ -78,18 +78,42 @@ export default function RoomsPage() {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/rooms`);
+        console.log(`📡 Fetching rooms from: ${API_BASE}/api/rooms`);
+        
+        // Include tokens if available to bypass backend auth bugs
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const headers: Record<string, string> = {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        };
+        
+        if (token) {
+          console.log(`🔑 Token found, attaching to request...`);
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const res = await fetch(`${API_BASE}/api/rooms`, { headers });
+        console.log(`📊 Response status: ${res.status}`);
+
+        // Handle explicit 500 server errors
+        if (!res.ok) {
+           console.error(`Backend returned an error. Status: ${res.status}`);
+        }
+
         const result = await res.json();
-        console.log('📦 Rooms data:', result);
+        console.log('📦 Result:', result);
         
         let roomsArray = [];
         if (Array.isArray(result)) roomsArray = result;
-        else if (result.data && Array.isArray(result.data)) roomsArray = result.data;
-        else roomsArray = [];
+        else if (result && result.data && Array.isArray(result.data)) roomsArray = result.data;
+        else {
+          console.warn('⚠️ No rooms found in response');
+          roomsArray = [];
+        }
         
         setRooms(roomsArray);
       } catch (err) {
-        console.error("Failed to load rooms", err);
+        console.error("Failed to load rooms:", err);
         setRooms([]);
       } finally {
         setLoading(false);
@@ -146,7 +170,10 @@ export default function RoomsPage() {
 
       const response = await fetch(`${API_BASE}/api/bookings`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json" 
+        },
         body: JSON.stringify({
           fullName, email: bookingForm.email, phone: bookingForm.phone,
           address: bookingForm.address, city: bookingForm.city, state: bookingForm.state,
@@ -156,10 +183,10 @@ export default function RoomsPage() {
         }),
       });
 
-      if (!response.ok) throw new Error("Save failed");
+      if (!response.ok) throw new Error("Booking save failed. Server error.");
       const bookingData = await response.json();
       const bookingId = bookingData.id || bookingData.booking_id;
-      if (!bookingId) throw new Error("No booking ID");
+      if (!bookingId) throw new Error("No booking ID returned from API");
 
       if (paymentMethod === 'paystack') {
         const loaded = await loadPaystackScript();
@@ -170,7 +197,7 @@ export default function RoomsPage() {
         }
 
         const paystack = new (window as any).PaystackPop();
-        const amountInKobo = Math.round(selectedRoom.price_per_night * 100);
+        const amountInKobo = Math.round(Number(selectedRoom.price_per_night || 0) * 100);
 
         paystack.newTransaction({
           key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
@@ -209,7 +236,10 @@ export default function RoomsPage() {
         // OPay
         const opayRes = await fetch(`${API_BASE}/api/payments/initialize-opay`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json" 
+          },
           body: JSON.stringify({ email: bookingForm.email, amount: selectedRoom.price_per_night, bookingId: bookingId, fullName: fullName }),
         });
         const opayData = await opayRes.json();
@@ -274,7 +304,8 @@ export default function RoomsPage() {
         </div>
 
         {rooms.length === 0 ? (
-          <div className="text-center py-20">
+          <div className="text-center py-20 bg-white shadow-sm border border-gray-100 rounded p-10">
+            <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
             <p className="text-gray-500 text-lg">No rooms available at the moment. Please check back later.</p>
           </div>
         ) : (
@@ -339,7 +370,7 @@ export default function RoomsPage() {
                     )}
 
                     <div className="absolute top-4 left-4 bg-[#d4af37] text-black font-bold py-1 px-3 text-sm uppercase shadow-md z-10">
-                      ₦{Number(room.price_per_night).toLocaleString()} / Night
+                      ₦{Number(room.price_per_night || 0).toLocaleString()} / Night
                     </div>
                   </div>
 
@@ -359,7 +390,7 @@ export default function RoomsPage() {
                     </p>
                     <div className="mt-auto flex gap-3">
                       <Link
-                        href={`/rooms/${room.slug}`}
+                        href={`/rooms/${room.slug || room.id}`}
                         className="flex-1 text-center border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white font-bold py-3 text-xs uppercase tracking-widest"
                       >
                         View Details
