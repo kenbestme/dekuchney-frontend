@@ -7,8 +7,42 @@ import Link from 'next/link';
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000';
 const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || API_BASE;
 
-const countries = [
-  // ... (your countries list stays the same, omit for brevity)
+// ✅ Explicit string[] type to fix TypeScript error
+const countries: string[] = [
+  'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda',
+  'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas',
+  'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize',
+  'Benin', 'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil',
+  'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cabo Verde', 'Cambodia',
+  'Cameroon', 'Canada', 'Central African Republic', 'Chad', 'Chile', 'China',
+  'Colombia', 'Comoros', 'Congo', 'Costa Rica', 'Croatia', 'Cuba',
+  'Cyprus', 'Czech Republic', 'Denmark', 'Djibouti', 'Dominica',
+  'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea',
+  'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 'Finland',
+  'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana',
+  'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana',
+  'Haiti', 'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia',
+  'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Jamaica',
+  'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kiribati', 'Korea, North',
+  'Korea, South', 'Kuwait', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon',
+  'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg',
+  'Madagascar', 'Malawi', 'Malaysia', 'Maldives', 'Mali', 'Malta',
+  'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico', 'Micronesia',
+  'Moldova', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique',
+  'Myanmar', 'Namibia', 'Nauru', 'Nepal', 'Netherlands', 'New Zealand',
+  'Nicaragua', 'Niger', 'Nigeria', 'North Macedonia', 'Norway', 'Oman',
+  'Pakistan', 'Palau', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru',
+  'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 'Russia',
+  'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent',
+  'Samoa', 'San Marino', 'Sao Tome and Principe', 'Saudi Arabia',
+  'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia',
+  'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa', 'Spain',
+  'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria',
+  'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste', 'Togo',
+  'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan',
+  'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom',
+  'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Vatican City',
+  'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe',
 ];
 
 export default function RoomsPage() {
@@ -28,7 +62,7 @@ export default function RoomsPage() {
   const [isPaying, setIsPaying] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'opay'>('paystack');
 
-  // Auto-detect country (same as before)
+  // Auto-detect country
   useEffect(() => {
     const detectCountry = async () => {
       try {
@@ -44,7 +78,7 @@ export default function RoomsPage() {
     detectCountry();
   }, []);
 
-  // Fetch rooms (using API_BASE)
+  // Fetch rooms
   useEffect(() => {
     const fetchRooms = async () => {
       try {
@@ -76,7 +110,7 @@ export default function RoomsPage() {
     setIsBookingOpen(true);
   };
 
-  // Load Paystack script (same as before)
+  // Load Paystack script
   const loadPaystackScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
       if (typeof window !== 'undefined' && (window as any).PaystackPop) {
@@ -208,7 +242,7 @@ export default function RoomsPage() {
 
   return (
     <div className="flex flex-col bg-[#fdfbf7] min-h-screen">
-      {/* Hero Banner – unchanged */}
+      {/* Hero Banner */}
       <section className="relative w-full h-[90vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-gray-900">
         <div
           className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
@@ -219,6 +253,7 @@ export default function RoomsPage() {
           className="absolute inset-0 opacity-10 z-10"
           style={{ background: 'radial-gradient(circle at 30% 50%, #d4af37, transparent 70%)' }}
         />
+
         <div className="relative z-20 text-center px-4 max-w-4xl mx-auto">
           <div className="flex items-center justify-center gap-3 mb-4">
             <span className="w-12 h-[2px] bg-[#d4af37]"></span>
@@ -231,6 +266,7 @@ export default function RoomsPage() {
           </p>
           <div className="w-20 h-1 bg-[#d4af37] mx-auto mt-6"></div>
         </div>
+
         <div className="absolute bottom-0 left-0 right-0 z-10 h-1.5 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent" />
       </section>
 
@@ -261,7 +297,7 @@ export default function RoomsPage() {
                 }
               }
 
-              // --- ✅ IMAGE MAPPING (your requested logic) ---
+              // --- Image mapping with environment variable ---
               const fullImages = parsedImages
                 .map((img: string) => {
                   if (!img) return null;
@@ -356,7 +392,7 @@ export default function RoomsPage() {
         )}
       </section>
 
-      {/* Lightbox Modal – same as before */}
+      {/* Lightbox Gallery Modal */}
       {galleryImages && galleryImages.length > 0 && (
         <div 
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-95 p-4"
@@ -406,7 +442,7 @@ export default function RoomsPage() {
         </div>
       )}
 
-      {/* Booking Modal – unchanged */}
+      {/* Booking Modal */}
       {isBookingOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
           <div className="bg-[#fdfbf7] p-8 md:p-10 rounded-none max-w-2xl w-full shadow-2xl border-t-4 border-[#d4af37] max-h-[90vh] overflow-y-auto">
