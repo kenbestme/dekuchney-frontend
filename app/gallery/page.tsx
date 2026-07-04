@@ -17,18 +17,30 @@ export default function GalleryPage() {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
 
+  // ============================================================
+  // ✅ DEBUGGING VERSION – with console logs
+  // ============================================================
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/gallery`);
+        const url = `${API_BASE}/api/gallery`;
+        console.log('📡 Fetching gallery from:', url);
+        const res = await fetch(url);
+        console.log('📊 Response status:', res.status);
+        
         const data = await res.json();
+        console.log('📦 Gallery data:', data);
+        
         if (data.success) {
           setImages(data.data);
+          console.log('✅ Set images:', data.data.length);
         } else {
-          console.error('Failed to fetch gallery');
+          console.error('❌ Failed to fetch gallery – success false');
+          setImages([]);
         }
       } catch (err) {
-        console.error('Error fetching gallery:', err);
+        console.error('❌ Error fetching gallery:', err);
+        setImages([]);
       } finally {
         setLoading(false);
       }
@@ -82,7 +94,6 @@ export default function GalleryPage() {
                 className="group relative overflow-hidden rounded-lg shadow-lg bg-gray-100 aspect-square cursor-pointer"
               >
                 <img
-                  // ✅ Use API_BASE for image source
                   src={`${API_BASE}${image.src.startsWith('/') ? image.src : '/' + image.src}`}
                   alt={image.alt}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -117,7 +128,6 @@ export default function GalleryPage() {
               ✕
             </button>
             <img
-              // ✅ Use API_BASE for modal image
               src={`${API_BASE}${selectedImage.src.startsWith('/') ? selectedImage.src : '/' + selectedImage.src}`}
               alt={selectedImage.alt}
               className="max-w-full max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-2xl mx-auto"
