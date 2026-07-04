@@ -297,14 +297,15 @@ export default function RoomsPage() {
               }
 
               // ✅ NEW image mapping as requested
+              const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || 'https://api.dekuchneyvilla.com';
+
               const fullImages = parsedImages
-                .map((img: string) => {
-                  if (!img) return null;
-                  if (img.startsWith('http')) return img;
-                  // Build relative URL: if it doesn't start with '/', prepend "/rooms/"
-                  return img.startsWith('/') ? img : `/rooms/${img.replace(/^rooms\//, '')}`;
-                })
-                .filter(Boolean);
+             .map((img: string) => {
+              if (!img) return null;
+              if (img.startsWith('http')) return img;
+              return `${IMAGE_BASE}${img.startsWith('/') ? img : '/' + img}`;
+              })
+              .filter(Boolean);
 
               const firstImage = fullImages.length > 0 ? fullImages[0] : null;
 
