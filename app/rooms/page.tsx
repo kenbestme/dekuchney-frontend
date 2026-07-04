@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-// ✅ Environment variables for production URLs
+// ✅ Only API_BASE is needed for API calls (images are now served from frontend public folder)
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000';
-const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || API_BASE;
 
 // ✅ Explicit string[] type to fix TypeScript error
 const countries: string[] = [
@@ -297,15 +296,13 @@ export default function RoomsPage() {
                 }
               }
 
-              // --- Image mapping with environment variable ---
+              // ✅ NEW image mapping as requested
               const fullImages = parsedImages
                 .map((img: string) => {
                   if (!img) return null;
-                  // If already absolute URL, use as-is
                   if (img.startsWith('http')) return img;
-                  // Otherwise, ensure a leading slash and prepend IMAGE_BASE
-                  const relativePath = img.startsWith('/') ? img : `/${img}`;
-                  return `${IMAGE_BASE}${relativePath}`;
+                  // Build relative URL: if it doesn't start with '/', prepend "/rooms/"
+                  return img.startsWith('/') ? img : `/rooms/${img.replace(/^rooms\//, '')}`;
                 })
                 .filter(Boolean);
 
