@@ -4,15 +4,15 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+// ✅ Use environment variable for API base URL
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000';
+
 export default function AdminRooms() {
   const router = useRouter();
   
-  // Added <any[]> to satisfy TypeScript
   const [rooms, setRooms] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<any>(null);
-  
-  // --- UPDATED: State to hold multiple files ---
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -26,17 +26,30 @@ export default function AdminRooms() {
     imagesInput: '' 
   });
 
+  // ✅ Safe token retrieval (prevents SSR errors)
+  const getToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('hotel_admin_token');
+    }
+    return null;
+  };
+
   // Authentication check
   useEffect(() => {
-    const token = localStorage.getItem("hotel_admin_token");
+    const token = getToken();
     if (!token) {
-      router.push("/admin/login");
+      router.push('/admin/login');
     }
   }, [router]);
 
   const fetchRooms = async () => {
+    const token = getToken();
+    if (!token) return;
+
     try {
-      const res = await fetch("http://localhost:5000/api/rooms");
+      const res = await fetch(`${API_BASE}/api/rooms`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const result = await res.json();
       if (Array.isArray(result)) setRooms(result);
       else if (result.data && Array.isArray(result.data)) setRooms(result.data);
@@ -49,7 +62,7 @@ export default function AdminRooms() {
   useEffect(() => { fetchRooms(); }, []);
 
   const openModal = (room: any = null) => {
-    setImageFiles([]); // Reset files on open
+    setImageFiles([]);
     if (room) {
       setEditingRoom(room);
       let parsedImages = '';
@@ -86,18 +99,23 @@ export default function AdminRooms() {
     e.preventDefault();
     setIsUploading(true);
     
+    const token = getToken();
+    if (!token) {
+      alert('You are not authenticated. Please login again.');
+      setIsUploading(false);
+      return;
+    }
+
     let uploadedUrls: string[] = [];
 
-    // --- UPDATED: Loop through all selected files and upload them ---
+    // Upload new images
     if (imageFiles.length > 0) {
-      const token = localStorage.getItem("hotel_admin_token");
-      
       for (let i = 0; i < imageFiles.length; i++) {
         const fileData = new FormData();
         fileData.append('image', imageFiles[i]);
         
         try {
-          const uploadRes = await fetch("http://localhost:5000/api/upload", {
+          const uploadRes = await fetch(`${API_BASE}/api/upload`, {
             method: "POST",
             headers: { 'Authorization': `Bearer ${token}` },
             body: fileData
@@ -114,27 +132,37 @@ export default function AdminRooms() {
     }
 
     const autoSlug = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-    const url = editingRoom ? `http://localhost:5000/api/rooms/${editingRoom.id}` : "http://localhost:5000/api/rooms";
+    const url = editingRoom ? `${API_BASE}/api/rooms/${editingRoom.id}` : `${API_BASE}/api/rooms`;
     const method = editingRoom ? "PATCH" : "POST";
     
-    // --- UPDATED: Combine existing URLs from the text area with the newly uploaded URLs ---
     const existingUrls = formData.imagesInput.split(',').map(s => s.trim()).filter(Boolean);
     const finalImagesArray = [...existingUrls, ...uploadedUrls];
 
-    await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        name: formData.name,
-        description: formData.description,
-        price_per_night: parseFloat(formData.price_per_night),
-        max_guests: parseInt(formData.max_guests),
-        beds: parseInt(formData.beds),
-        wifi: formData.wifi,
-        images: finalImagesArray, // Send the combined array
-        slug: autoSlug
-      })
-    });
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          name: formData.name,
+          description: formData.description,
+          price_per_night: parseFloat(formData.price_per_night),
+          max_guests: parseInt(formData.max_guests),
+          beds: parseInt(formData.beds),
+          wifi: formData.wifi,
+          images: finalImagesArray,
+          slug: autoSlug
+        })
+      });
+      
+      if (!res.ok) throw new Error('Failed to save room');
+      
+    } catch (err) {
+      console.error('Save error:', err);
+      alert('Failed to save room. Please try again.');
+    }
     
     setIsUploading(false);
     setIsModalOpen(false);
@@ -142,9 +170,23 @@ export default function AdminRooms() {
   };
 
   const deleteRoom = async (id: number) => {
-    if (confirm("Are you sure you want to delete this suite?")) {
-      await fetch(`http://localhost:5000/api/rooms/${id}`, { method: "DELETE" });
+    if (!confirm("Are you sure you want to delete this suite?")) return;
+    
+    const token = getToken();
+    if (!token) {
+      alert('Please login again.');
+      return;
+    }
+
+    try {
+      await fetch(`${API_BASE}/api/rooms/${id}`, { 
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
       fetchRooms();
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Failed to delete room.');
     }
   };
 
@@ -163,7 +205,8 @@ export default function AdminRooms() {
     }
     const firstImage = imagesArray.length > 0 ? imagesArray[0] : null;
     if (firstImage && !firstImage.startsWith('http')) {
-      return `http://localhost:5000${firstImage}`;
+      // ✅ Prepend API_BASE if it's a relative path
+      return `${API_BASE}${firstImage.startsWith('/') ? firstImage : '/' + firstImage}`;
     }
     return firstImage;
   };
@@ -202,7 +245,6 @@ export default function AdminRooms() {
             {rooms.map((room: any) => {
               const imageUrl = getFirstImage(room.images);
               
-              // Count total images to show a gallery indicator
               let imgCount = 0;
               if (Array.isArray(room.images)) imgCount = room.images.length;
               else if (typeof room.images === 'string') {
@@ -269,7 +311,6 @@ export default function AdminRooms() {
               <label className="block text-sm font-bold text-gray-700 mb-1">Description</label>
               <textarea required className="w-full border border-gray-300 rounded p-2 mb-4 h-24 focus:outline-none focus:border-[#d4af37]" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
               
-              {/* --- UPDATED: Allow multiple file selection --- */}
               <div className="bg-gray-50 p-4 border border-gray-200 rounded mb-6">
                 <label className="block text-sm font-bold text-gray-700 mb-2">Upload New Photos (Select Multiple)</label>
                 <input 
@@ -280,7 +321,6 @@ export default function AdminRooms() {
                   onChange={e => setImageFiles(e.target.files ? Array.from(e.target.files) : [])} 
                 />
                 
-                {/* --- UPDATED: Editable text area for existing images --- */}
                 <label className="block text-sm font-bold text-gray-700 mb-1">Current Image URLs</label>
                 <p className="text-xs text-gray-500 mb-2">These are the images already saved. You can delete URLs here to remove them. Separate multiple URLs with a comma.</p>
                 <textarea 
