@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
+// ✅ Use environment variable for API base URL
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000';
+
 interface GalleryImage {
   id: number;
   src: string;
@@ -17,7 +20,7 @@ export default function GalleryPage() {
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/gallery');
+        const res = await fetch(`${API_BASE}/api/gallery`);
         const data = await res.json();
         if (data.success) {
           setImages(data.data);
@@ -79,7 +82,8 @@ export default function GalleryPage() {
                 className="group relative overflow-hidden rounded-lg shadow-lg bg-gray-100 aspect-square cursor-pointer"
               >
                 <img
-                  src={`http://localhost:5000${image.src}`}
+                  // ✅ Use API_BASE for image source
+                  src={`${API_BASE}${image.src.startsWith('/') ? image.src : '/' + image.src}`}
                   alt={image.alt}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
@@ -113,7 +117,8 @@ export default function GalleryPage() {
               ✕
             </button>
             <img
-              src={`http://localhost:5000${selectedImage.src}`}
+              // ✅ Use API_BASE for modal image
+              src={`${API_BASE}${selectedImage.src.startsWith('/') ? selectedImage.src : '/' + selectedImage.src}`}
               alt={selectedImage.alt}
               className="max-w-full max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-2xl mx-auto"
             />
